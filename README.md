@@ -87,7 +87,7 @@ The sampler implements the `llama_sampler_i` interface with:
 ## Project Structure
 
 ```
-custom-sampler/
+llama-constrain/
 ├── include/
 │   └── token_filter_sampler.h
 ├── src/
