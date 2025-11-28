@@ -4,12 +4,13 @@ A powerful constrained generation library for llama.cpp with an **ultra-simple A
 
 ## 🚀 Why llama-constrain?
 
-Traditional LLM generation can produce malformed outputs, especially with structured formats like XML/JSON. This library solves that by **filtering tokens before generation**, not after:
+Building reliable structured outputs (XML/JSON) with LLMs requires careful token-level control. This library provides:
 
-- ❌ **Before**: Model generates `</think</think</think` (malformed!)
-- ✅ **After**: Model generates `</think>` (always well-formed!)
+- **Pre-generation token filtering** - Filter tokens before they're selected, not after
+- **Proper stop sequence handling** - Complete partial tags correctly (e.g., `</think` → `</think>`)
+- **Ultra-simple API** - No manual tokenization or sampler chain management
 
-Built on llama.cpp's sampler architecture, it prevents bad tokens from ever being selected, ensuring reliable structured outputs.
+Built on llama.cpp's sampler architecture for efficient, reliable constrained generation.
 
 ## ✨ Features
 
