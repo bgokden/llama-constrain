@@ -60,6 +60,14 @@ std::string thinking = llm.generate(300, {"</think>"}, 0.0f);
   - Custom regex patterns
   - Per-token validation
 
+### ⚡ Performance Optimizations
+
+- **Automatic Context Caching** - Save and reuse prompt processing
+  - Cache large system prompts (KV cache state + tokens + text)
+  - Restore context for repeated queries without reprocessing
+  - Perfect for static prompts with multiple questions
+  - Significant speedup: ~600 token prompt processed once, reused N times
+
 ### 🔧 Low-Level Token Filtering
 
 - **Allowlist mode**: Only specified tokens can be generated
@@ -216,6 +224,31 @@ Output: 579
 ```
 
 **Key Feature**: The stop sequence sampler automatically prevents malformed tags like `</think</think</think` by filtering tokens before they're generated!
+
+### Context Caching for Repeated Queries
+
+When you have a static system prompt and multiple queries, cache the prompt to avoid reprocessing:
+
+```cpp
+LLMSession llm("model.gguf");
+llm.enable_auto_cache(true);  // Enable automatic caching
+
+// Large system prompt (processed once)
+llm += "You are a helpful assistant that...[long prompt with examples]...";
+
+// Save the cached state (KV cache + tokens + text)
+std::vector<uint8_t> cached_prompt = llm.get_cached_prompt();
+
+// Process multiple queries - each starts from cached state
+for (const auto& question : questions) {
+    llm.load_context_from_memory(cached_prompt);  // Restore to system prompt
+    llm += "<input>" + question + "</input>";
+    std::string answer = llm.generate(200, {"</output>"});
+    // Next iteration resets back to just the system prompt
+}
+```
+
+**Performance**: A 600-token system prompt is processed once and reused for all queries, saving significant computation time.
 
 ### Mid-Level API (More Control)
 
