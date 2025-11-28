@@ -1,16 +1,37 @@
 # llama-constrain
 
-A powerful constrained generation library for llama.cpp with an **ultra-simple API**. Build structured outputs, multi-step reasoning, and reliable XML/JSON generation. No manual tokenization, no decoding, no memory management required!
+A powerful **constrained generation** library for llama.cpp with an ultra-simple API. Control exactly what tokens your model can generate - force specific outputs, ensure valid JSON/XML, or constrain to patterns. No manual tokenization, no decoding, no memory management required!
 
 ## 🚀 Why llama-constrain?
 
-Building reliable structured outputs (XML/JSON) with LLMs requires careful token-level control. This library provides:
+**Constrained generation** means controlling which tokens the model can generate at each step. This library provides the tools to:
 
-- **Pre-generation token filtering** - Filter tokens before they're selected, not after
-- **Proper stop sequence handling** - Complete partial tags correctly (e.g., `</think` → `</think>`)
-- **Ultra-simple API** - No manual tokenization or sampler chain management
+- **Force specific choices** - Make model select from predefined options (e.g., `select(["Yes", "No", "Maybe"])`)
+- **Ensure valid structure** - Generate well-formed XML/JSON with proper tag completion
+- **Pattern matching** - Constrain output to numbers, emails, or custom regex patterns
+- **Stop sequences** - Reliably stop at specific strings with proper completion
 
-Built on llama.cpp's sampler architecture for efficient, reliable constrained generation.
+All built on llama.cpp's sampler architecture using **pre-generation token filtering** - tokens are filtered before selection, ensuring constraints are always satisfied.
+
+### Bonus: Multi-Step Thinking
+
+As an example of what constrained generation enables, you can easily implement **chain-of-thought reasoning** where any model "thinks" step-by-step using structured tags, even without specific training!
+
+## Quick Examples
+
+```cpp
+// 1. Force model to choose from specific options
+std::string answer = llm.select({"Yes", "No", "Maybe"});
+
+// 2. Generate valid JSON with proper closing
+std::string json = llm.generate(100, {"\n}"}, 0.0f);
+
+// 3. Constrain to numbers only
+llm.generate(10, {}, 0.7f, "", PATTERN_NUMERIC);
+
+// 4. Make any model think step-by-step
+std::string thinking = llm.generate(300, {"</think>"}, 0.0f);
+```
 
 ## ✨ Features
 
@@ -145,9 +166,9 @@ std::cout << llm.get_output();  // Get full conversation
 
 **That's it!** No tokenization, no `llama_decode()`, no cleanup - everything is automatic.
 
-### Structured Thinking Example
+### Example: Structured Thinking (Chain-of-Thought)
 
-Build AI systems with multi-step reasoning using XML-structured outputs:
+Using constrained generation, you can make **any model** perform multi-step reasoning with structured XML outputs - no special training required:
 
 ```cpp
 #include "constrained_llm.h"
