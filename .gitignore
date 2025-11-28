@@ -1,0 +1,9 @@
+build/
+models/
+*.o
+*.a
+*.so
+*.dylib
+example
+.DS_Store
+compile_commands.json
