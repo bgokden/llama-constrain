@@ -178,6 +178,12 @@ target_link_libraries(memory_agent_example
     Threads::Threads
 )
 
+add_executable(test_prefix_issue examples/test_prefix_issue.cpp)
+target_link_libraries(test_prefix_issue
+    constrained_llm
+    Threads::Threads
+)
+
 if(APPLE)
     target_link_libraries(example "-framework Accelerate")
     target_link_libraries(select_example "-framework Accelerate")
@@ -198,4 +204,5 @@ if(APPLE)
     target_link_libraries(stop_sequence_test "-framework Accelerate")
     target_link_libraries(token_debug_test "-framework Accelerate")
     target_link_libraries(memory_agent_example "-framework Accelerate")
+    target_link_libraries(test_prefix_issue "-framework Accelerate")
 endif()

@@ -7,3 +7,5 @@ models/
 example
 .DS_Store
 compile_commands.json
+test_results.txt
+external/muparser/

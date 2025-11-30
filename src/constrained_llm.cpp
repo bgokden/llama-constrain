@@ -99,6 +99,11 @@ std::string LLMSession::select(const std::vector<std::string> & options, const s
 
         generated_tokens.push_back(new_token);
 
+        // Decode token into context BEFORE checking for match
+        if (llama_decode(pImpl->ctx, llama_batch_get_one(&new_token, 1)) != 0) {
+            throw std::runtime_error("Failed to decode token");
+        }
+
         // Check if we've fully matched any option
         for (size_t opt_idx = 0; opt_idx < option_tokens.size(); opt_idx++) {
             if (generated_tokens.size() == option_tokens[opt_idx].size()) {
@@ -119,11 +124,6 @@ std::string LLMSession::select(const std::vector<std::string> & options, const s
         // If we found a match, stop early
         if (!selected.empty()) {
             break;
-        }
-
-        // Decode token into context
-        if (llama_decode(pImpl->ctx, llama_batch_get_one(&new_token, 1)) != 0) {
-            throw std::runtime_error("Failed to decode token");
         }
     }
 
