@@ -80,40 +80,58 @@ std::string LLMSession::select(const std::vector<std::string> & options, const s
         max_length = std::max(max_length, n);
     }
 
-    // Generate with prefix_select sampler, token by token
-    generate_params params;
-    params.max_tokens = max_length;
-    params.temperature = 0.0f;
-    params.custom_sampler = llama_sampler_init_prefix_select(pImpl->vocab, options);
+    // Generate with prefix_select sampler, checking after each token if we've matched an option
+    auto sparams = llama_sampler_chain_default_params();
+    llama_sampler * smpl = llama_sampler_chain_init(sparams);
+    llama_sampler_chain_add(smpl, llama_sampler_init_prefix_select(pImpl->vocab, options));
+    llama_sampler_chain_add(smpl, llama_sampler_init_temp(0.0f));
+    llama_sampler_chain_add(smpl, llama_sampler_init_dist(0));
 
-    generate_result result = ::generate(pImpl->ctx, pImpl->vocab, params);
-
-    // Add tokens to context
-    for (llama_token token : result.tokens) {
-        pImpl->context_tokens.push_back(token);
-    }
-
-    // Match generated tokens to find which option was selected
+    std::vector<llama_token> generated_tokens;
     std::string selected;
-    for (size_t i = 0; i < options.size(); i++) {
-        if (result.tokens.size() == option_tokens[i].size()) {
-            bool match = true;
-            for (size_t j = 0; j < result.tokens.size(); j++) {
-                if (result.tokens[j] != option_tokens[i][j]) {
-                    match = false;
+
+    for (int i = 0; i < max_length; i++) {
+        llama_token new_token = llama_sampler_sample(smpl, pImpl->ctx, -1);
+
+        if (llama_vocab_is_eog(pImpl->vocab, new_token)) {
+            break;
+        }
+
+        generated_tokens.push_back(new_token);
+
+        // Check if we've fully matched any option
+        for (size_t opt_idx = 0; opt_idx < option_tokens.size(); opt_idx++) {
+            if (generated_tokens.size() == option_tokens[opt_idx].size()) {
+                bool match = true;
+                for (size_t j = 0; j < generated_tokens.size(); j++) {
+                    if (generated_tokens[j] != option_tokens[opt_idx][j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    selected = options[opt_idx];
                     break;
                 }
             }
-            if (match) {
-                selected = options[i];
-                break;
-            }
+        }
+
+        // If we found a match, stop early
+        if (!selected.empty()) {
+            break;
+        }
+
+        // Decode token into context
+        if (llama_decode(pImpl->ctx, llama_batch_get_one(&new_token, 1)) != 0) {
+            throw std::runtime_error("Failed to decode token");
         }
     }
 
-    // If no exact match, use the generated text
-    if (selected.empty()) {
-        selected = result.text;
+    llama_sampler_free(smpl);
+
+    // Add tokens to context
+    for (llama_token token : generated_tokens) {
+        pImpl->context_tokens.push_back(token);
     }
 
     pImpl->accumulated_text += selected;
